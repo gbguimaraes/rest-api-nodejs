@@ -1,0 +1,27 @@
+{
+  "name": "rest-api",
+  "version": "1.0.0",
+  "description": "Rest API com NodeJS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gbguimaraes/rest-api-nodejs.git"
+  },
+  "keywords": [
+    "rest-api",
+    "nodejs",
+    "rest"
+  ],
+  "author": "Guilherme Brilhante Guimarães",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gbguimaraes/rest-api-nodejs/issues"
+  },
+  "homepage": "https://github.com/gbguimaraes/rest-api-nodejs#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
