@@ -1,44 +1,142 @@
 const express = require('express');
 const router = express.Router();
+const mysql = require('../mysql').pool;
 
 
 // Utilizando o método GET ele retorna os todos os pedidos.
 router.get('/', (req, res, next) => {
-    res.status(200).send({
-        mensagem: 'Retorna os pedidos'
+    mysql.getConnection((error, conn) => {
+        if(error) {return res.status(500).send({ error: error })};
+        conn.query(
+            'SELECT * FROM pedidos;',
+            (error, result, field) => {
+                if(error) {return res.status(500).send({ error: error })};
+                const response = {
+                    quantidade: result.length,
+                    pedidos: result.map(pedido => {
+                        return {
+                            id_pedido: pedido.id_pedidos,
+                            id_produto: pedido.id_produtos,
+                            quantidade: pedido.quantidade,
+                            request: {
+                                tipo: 'GET',
+                                descricao: 'Retorna os detalhes de um pedido específico.',
+                                url: 'http://localhost:3000/pedidos/' + pedido.id_pedidos
+                            }
+                        }
+                    })
+                }
+                return res.status(200).send(response);
+            }
+        )
     });
 });
 
 
 // Utilizando o método POST ele insere um pedidos.
 router.post('/', (req, res, next) => {
+    mysql.getConnection((error, conn) => {
+        if(error) {return res.status(500).send({ error: error })};
+        conn.query('SELECT * FROM produtos WHERE id_produtos = ?', [req.body.id_produto],
+        (error, result, fields) => {
+            if(error) {return res.status(500).send({ error: error })};
+            if(result.length == 0) {
+                return res.status(404).send({
+                    mensagem: 'Produto não encontrado.'
+                })
+            }
+            
+            conn.query(
+                'INSERT INTO pedidos (id_produtos, quantidade) VALUES (?,?)',
+                [req.body.id_produto,req.body.quantidade],
+                (error, result, fields) => {
+                    conn.release();
+                    if(error) {return res.status(500).send({ error: error })};
+                    const response = {
+                        mensagem: 'Pedido inserido com sucesso.',
+                        pedidoCriado:{
+                            id_pedido: result.id_pedido,
+                            id_produto: req.body.id_produto,
+                            quantidade: req.body.quantidade,
+                            request: {
+                                tipo: 'GET',
+                                descricao: 'Retorna todos os pedidos.',
+                                url: 'http://localhost:3000/pedidos'
+                            }
+                        }
+                        
+                    }
+                    return res.status(201).send(response);
+    
+                }
+            )
 
-    const pedido = {
-        id_produto: req.body.id_produto,
-        quantidade: req.body.quantidade
-    }
-
-    res.status(201).send({
-        mensagem: 'Cria um pedido',
-        pedidoCriado: pedido
-    });
+        })
+    });  
 });
 
 
 // Nessa aplicação o método GET retorna os dados de um pedido.
 router.get('/:id_pedido', (req, res, next) => {
-    const id = req.params.id_pedido
-    res.status(200).send({
-        mensagem: 'Informações do pedido',
-        id_pedido: id
-    });    
+    mysql.getConnection((error, conn) => {
+        if(error) {return res.status(500).send({ error: error })};
+        conn.query(
+            'SELECT * FROM pedidos WHERE id_pedidos = ?;',
+            [req.params.id_pedido],
+            (error, result, fields) => {
+                if(error) {return res.status(500).send({ error: error })};
+
+                if(result.length == 0) {
+                    return res.status(404).send({
+                        mensagem: 'Não foi encontrado pedido com este ID.'
+                    })
+                }
+                const response = {
+                    pedido:{
+                        id_pedido: result[0].id_pedidos,
+                        id_produto: result[0].id_produtos,
+                        quantidade: result[0].quantidade,
+                        request: {
+                            tipo: 'GET',
+                            descricao: 'Retorna todos os produtos.',
+                            url: 'http://localhost:3000/pedidos'
+                        }
+                    }
+                    
+                }
+                return res.status(200).send(response);
+            }
+        )
+    });  
 });
 
 
 // Nessa aplicação o método DELETE remove os dados de um produto.
 router.delete('/', (req, res, next) => {
-    res.status(201).send({
-        mensagem: 'Exclui um pedido'
+    mysql.getConnection((error, conn) => {
+        if(error) {return res.status(500).send({ error: error })};
+        conn.query(
+            `DELETE FROM pedidos WHERE id_pedidos = ?`,
+            [req.body.id_pedido],
+            (error, resultado, fields) => {
+                conn.release();
+                if(error) {return res.status(500).send({ error: error })};
+                const response = {
+                    mensagem : 'Pedido removido com sucesso.',
+                    request: {
+                        tipo: 'POST',
+                        descricao: 'Insere um pedido',
+                        url: 'http://localhost:3000/produtos',
+                        body: {
+                            id_produto: 'Number',
+                            quantidade: 'Number'
+                        }
+                    }
+                }
+                return res.status(202).send(response);
+
+            }
+        )
     });
 });
 
