@@ -8,20 +8,30 @@ router.get('/', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if(error) {return res.status(500).send({ error: error })};
         conn.query(
-            'SELECT * FROM pedidos;',
+                    `SELECT pedidos.id_pedido,
+                            pedidos.quantidade,
+                            produtos.id_produto,
+                            produtos.nome,
+                            produtos.preco
+                       FROM pedidos
+                 INNER JOIN produtos
+                         ON produtos.id_produto = pedidos.id_produto;`,
             (error, result, field) => {
                 if(error) {return res.status(500).send({ error: error })};
                 const response = {
-                    quantidade: result.length,
                     pedidos: result.map(pedido => {
                         return {
-                            id_pedido: pedido.id_pedidos,
-                            id_produto: pedido.id_produtos,
+                            id_pedido: pedido.id_pedido,
                             quantidade: pedido.quantidade,
+                            produto: {
+                                id_produto: pedido.id_produto,
+                                nome: pedido.nome,
+                                preco: pedido.preco
+                            },
                             request: {
                                 tipo: 'GET',
                                 descricao: 'Retorna os detalhes de um pedido específico.',
-                                url: 'http://localhost:3000/pedidos/' + pedido.id_pedidos
+                                url: 'http://localhost:3000/pedidos/' + pedido.id_pedido
                             }
                         }
                     })
@@ -37,7 +47,7 @@ router.get('/', (req, res, next) => {
 router.post('/', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if(error) {return res.status(500).send({ error: error })};
-        conn.query('SELECT * FROM produtos WHERE id_produtos = ?', [req.body.id_produto],
+        conn.query('SELECT * FROM produtos WHERE id_produto = ?', [req.body.id_produto],
         (error, result, fields) => {
             if(error) {return res.status(500).send({ error: error })};
             if(result.length == 0) {
@@ -47,7 +57,7 @@ router.post('/', (req, res, next) => {
             }
             
             conn.query(
-                'INSERT INTO pedidos (id_produtos, quantidade) VALUES (?,?)',
+                'INSERT INTO pedidos (id_produto, quantidade) VALUES (?,?)',
                 [req.body.id_produto,req.body.quantidade],
                 (error, result, fields) => {
                     conn.release();
@@ -81,7 +91,7 @@ router.get('/:id_pedido', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if(error) {return res.status(500).send({ error: error })};
         conn.query(
-            'SELECT * FROM pedidos WHERE id_pedidos = ?;',
+            'SELECT * FROM pedidos WHERE id_pedido = ?;',
             [req.params.id_pedido],
             (error, result, fields) => {
                 if(error) {return res.status(500).send({ error: error })};
@@ -93,8 +103,8 @@ router.get('/:id_pedido', (req, res, next) => {
                 }
                 const response = {
                     pedido:{
-                        id_pedido: result[0].id_pedidos,
-                        id_produto: result[0].id_produtos,
+                        id_pedido: result[0].id_pedido,
+                        id_produto: result[0].id_produto,
                         quantidade: result[0].quantidade,
                         request: {
                             tipo: 'GET',
@@ -116,7 +126,7 @@ router.delete('/', (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if(error) {return res.status(500).send({ error: error })};
         conn.query(
-            `DELETE FROM pedidos WHERE id_pedidos = ?`,
+            `DELETE FROM pedidos WHERE id_pedido = ?`,
             [req.body.id_pedido],
             (error, resultado, fields) => {
                 conn.release();
